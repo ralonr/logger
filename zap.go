@@ -2,8 +2,6 @@ package logger
 
 import (
 	"fmt"
-	"time"
-
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -58,8 +56,8 @@ func NewZapLogger(level LogLevel) *ZapLogger {
 	}
 }
 
-// GetLogLevel returns the log level as a string.
-func (l LogLevel) GetLogLevel() string {
+// String returns the log level as a string.
+func (l LogLevel) String() string {
 	switch l {
 	case DebugLevel:
 		return "debug"
@@ -74,6 +72,11 @@ func (l LogLevel) GetLogLevel() string {
 	default:
 		return ""
 	}
+}
+
+// GetLevel returns the current Loglevel
+func (z *ZapLogger) GetLevel() LogLevel {
+	return z.LogLevel
 }
 
 // Debug logs a debug message with structured fields.
@@ -132,12 +135,6 @@ func mapToZapFields(fields Fields) []zap.Field {
 			zapFields = append(zapFields, zap.Float64(k, val))
 		case bool:
 			zapFields = append(zapFields, zap.Bool(k, val))
-		case []byte:
-			zapFields = append(zapFields, zap.Binary(k, val))
-		case time.Time:
-			zapFields = append(zapFields, zap.Time(k, val))
-		case time.Duration:
-			zapFields = append(zapFields, zap.Duration(k, val))
 		default:
 			zapFields = append(zapFields, zap.Any(k, v))
 		}
