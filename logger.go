@@ -16,11 +16,11 @@ const (
 
 // Logger implements the behaviour of the logging methods
 type Logger interface {
-	Debug(msg string, fields map[string]any)
-	Info(msg string, fields map[string]any)
-	Warn(msg string, fields map[string]any)
-	Error(msg string, fields map[string]any)
-	Fatal(msg string, fields map[string]any)
+	Debug(msg string, fields Fields)
+	Info(msg string, fields Fields)
+	Warn(msg string, fields Fields)
+	Error(msg string, fields Fields)
+	Fatal(msg string, fields Fields)
 
 	GetLevel() LogLevel
 }
