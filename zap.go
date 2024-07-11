@@ -59,7 +59,7 @@ func NewZapLogger(level LogLevel) *ZapLogger {
 }
 
 // GetLogLevel returns the log level as a string.
-func (l LogLevel) String() string {
+func (l LogLevel) GetLogLevel() string {
 	switch l {
 	case DebugLevel:
 		return "debug"
