@@ -72,6 +72,29 @@ func TestShouldLog(t *testing.T) {
 	assert.True(t, logger.shouldLog(FatalLevel), "Fatal level should be logged")
 }
 
+func TestFatalLogMethod(t *testing.T) {
+	buf := new(bytes.Buffer)
+	ws := zapcore.AddSync(buf)
+	encoderConfig := zap.NewProductionEncoderConfig()
+	core := zapcore.NewCore(zapcore.NewJSONEncoder(encoderConfig), ws, zap.NewAtomicLevelAt(zap.FatalLevel))
+	logger := &ZapLogger{
+		logger:   zap.New(core),
+		LogLevel: FatalLevel,
+		exitFunc: func(int) {}, // Mock the exit function
+	}
+
+	fields := Fields{"key": "value"}
+
+	// Use a recoverable function to test Fatal
+	defer func() {
+		if r := recover(); r != nil {
+			assert.Contains(t, buf.String(), "test message")
+			assert.Contains(t, buf.String(), `"key":"value"`)
+		}
+	}()
+	logger.Fatal("test message", fields)
+}
+
 func TestMapToZapFields(t *testing.T) {
 	fields := Fields{
 		"string":    "test",
