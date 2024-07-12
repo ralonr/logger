@@ -9,14 +9,14 @@ type Config struct {
 	Level      Level
 	Output     io.Writer
 	ExitFunc   func(int)
-	MoreConfig map[string]any
+	MoreConfig map[string]interface{}
 }
 
 // Level represents the severity of the log message.
 type Level int
 
 // Fields represents a map of key-value pairs for structured logging.
-type Fields map[string]any
+type Fields map[string]interface{}
 
 const (
 	DebugLevel Level = iota
