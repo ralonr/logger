@@ -1,13 +1,25 @@
 package logger
 
-// LogLevel represents the severity of the log message.
-type LogLevel int
+import (
+	"io"
+)
+
+// Config holds the configuration for the logger.
+type Config struct {
+	Level      Level
+	Output     io.Writer
+	ExitFunc   func(int)
+	MoreConfig map[string]any
+}
+
+// Level represents the severity of the log message.
+type Level int
 
 // Fields represents a map of key-value pairs for structured logging.
 type Fields map[string]any
 
 const (
-	DebugLevel LogLevel = iota
+	DebugLevel Level = iota
 	InfoLevel
 	WarnLevel
 	ErrorLevel
@@ -21,6 +33,4 @@ type Logger interface {
 	Warn(msg string, fields Fields)
 	Error(msg string, fields Fields)
 	Fatal(msg string, fields Fields)
-
-	GetLevel() LogLevel
 }

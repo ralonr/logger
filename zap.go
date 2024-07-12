@@ -1,22 +1,22 @@
 package logger
 
 import (
-	"fmt"
+	"os"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-// ZapLogger is a logger implementation using zap.
-type ZapLogger struct {
-	logger   *zap.Logger
-	LogLevel LogLevel
-	exitFunc func(int)
+// Zap is a logger implementation using zap.
+type Zap struct {
+	logger *zap.Logger
+	Config Config
 }
 
-// NewZapLogger returns a new *ZapLogger.
-func NewZapLogger(level LogLevel) *ZapLogger {
+// NewZap returns a new *Zap.
+func NewZap(config Config) *Zap {
 	atomicLevel := zap.NewAtomicLevel()
-	switch level {
+	switch config.Level {
 	case DebugLevel:
 		atomicLevel.SetLevel(zap.DebugLevel)
 	case InfoLevel:
@@ -31,93 +31,64 @@ func NewZapLogger(level LogLevel) *ZapLogger {
 		atomicLevel.SetLevel(zap.InfoLevel)
 	}
 
-	// Create a zap logger with the specified level
-	loggerConfig := zap.Config{
-		Level:         atomicLevel,
-		Encoding:      "json",
-		OutputPaths:   []string{"stdout"},
-		EncoderConfig: zap.NewProductionEncoderConfig(),
+	output := zapcore.AddSync(config.Output)
+	encoderConfig := zap.NewProductionEncoderConfig()
+	encoderConfig.CallerKey = "caller"
+	encoderConfig.EncodeCaller = zapcore.FullCallerEncoder
+	encoderConfig.EncodeTime = zapcore.RFC3339TimeEncoder
+
+	core := zapcore.NewCore(zapcore.NewJSONEncoder(encoderConfig), output, atomicLevel)
+	logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
+
+	if config.ExitFunc == nil {
+		config.ExitFunc = os.Exit // default to os.Exit
 	}
 
-	// Configure the logger
-	loggerConfig.EncoderConfig.CallerKey = "caller"
-	loggerConfig.EncoderConfig.EncodeCaller = zapcore.FullCallerEncoder
-	loggerConfig.EncoderConfig.EncodeTime = zapcore.RFC3339TimeEncoder
-
-	logger, err := loggerConfig.Build(zap.AddCallerSkip(1))
-	if err != nil {
-		fmt.Printf("Error building logger: %v\n", err)
-		return nil
+	return &Zap{
+		logger: logger,
+		Config: config,
 	}
-	return &ZapLogger{
-		logger:   logger,
-		LogLevel: level,
-		exitFunc: func(int) {}, // default to no-op
-	}
-}
-
-// String returns the log level as a string.
-func (l LogLevel) String() string {
-	switch l {
-	case DebugLevel:
-		return "debug"
-	case InfoLevel:
-		return "info"
-	case WarnLevel:
-		return "warn"
-	case ErrorLevel:
-		return "error"
-	case FatalLevel:
-		return "fatal"
-	default:
-		return ""
-	}
-}
-
-// GetLevel returns the current Loglevel
-func (z *ZapLogger) GetLevel() LogLevel {
-	return z.LogLevel
 }
 
 // Debug logs a debug message with structured fields.
-func (z *ZapLogger) Debug(msg string, fields Fields) {
+func (z *Zap) Debug(msg string, fields Fields) {
 	if z.shouldLog(DebugLevel) {
 		z.logger.Debug(msg, mapToZapFields(fields)...)
 	}
 }
 
 // Info logs an info message with structured fields.
-func (z *ZapLogger) Info(msg string, fields Fields) {
+func (z *Zap) Info(msg string, fields Fields) {
 	if z.shouldLog(InfoLevel) {
 		z.logger.Info(msg, mapToZapFields(fields)...)
 	}
 }
 
 // Warn logs a warning message with structured fields.
-func (z *ZapLogger) Warn(msg string, fields Fields) {
+func (z *Zap) Warn(msg string, fields Fields) {
 	if z.shouldLog(WarnLevel) {
 		z.logger.Warn(msg, mapToZapFields(fields)...)
 	}
 }
 
 // Error logs an error message with structured fields.
-func (z *ZapLogger) Error(msg string, fields Fields) {
+func (z *Zap) Error(msg string, fields Fields) {
 	if z.shouldLog(ErrorLevel) {
 		z.logger.Error(msg, mapToZapFields(fields)...)
 	}
 }
 
 // Fatal logs a fatal message with structured fields and exits the application.
-func (z *ZapLogger) Fatal(msg string, fields Fields) {
+func (z *Zap) Fatal(msg string, fields Fields) {
 	if z.shouldLog(FatalLevel) {
 		z.logger.Fatal(msg, mapToZapFields(fields)...)
-		z.exitFunc(1)
+		z.Config.ExitFunc(1)
 	}
 }
 
 // shouldLog determines if a log entry should be logged based on the log level.
-func (z *ZapLogger) shouldLog(level LogLevel) bool {
-	return level >= z.LogLevel
+func (z *Zap) shouldLog(level Level) bool {
+	return level >= z.Config.Level
 }
 
 // mapToZapFields converts Fields to zap.Field with type-specific handling for better performance.
